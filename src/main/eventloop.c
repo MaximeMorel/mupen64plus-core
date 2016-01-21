@@ -99,6 +99,8 @@ static m64p_handle l_CoreEventsConfig = NULL;
 #define kbdForward "Kbd Mapping Fast Forward"
 #define kbdAdvance "Kbd Mapping Frame Advance"
 #define kbdGameshark "Kbd Mapping Gameshark"
+#define kbdOverclock "Kbd Mapping Overclock"
+#define kbdUnderclock "Kbd Mapping Underclock"
 
 typedef enum {joyFullscreen,
               joyStop,
@@ -543,6 +545,8 @@ int event_set_core_defaults(void)
     ConfigSetDefaultInt(l_CoreEventsConfig, kbdForward, sdl_native2keysym(SDL_SCANCODE_F),            "SDL keysym for temporarily going really fast");
     ConfigSetDefaultInt(l_CoreEventsConfig, kbdAdvance, sdl_native2keysym(SDL_SCANCODE_SLASH),        "SDL keysym for advancing by one frame when paused");
     ConfigSetDefaultInt(l_CoreEventsConfig, kbdGameshark, sdl_native2keysym(SDL_SCANCODE_G),          "SDL keysym for pressing the game shark button");
+    ConfigSetDefaultInt(l_CoreEventsConfig, kbdOverclock, sdl_native2keysym(SDL_SCANCODE_F2),         "SDL keysym for overclocking");
+    ConfigSetDefaultInt(l_CoreEventsConfig, kbdUnderclock, sdl_native2keysym(SDL_SCANCODE_F1),        "SDL keysym for underclocking");
     /* Joystick events mapped to core functions */
     ConfigSetDefaultString(l_CoreEventsConfig, JoyCmdName[joyStop], "",       "Joystick event string for stopping the emulator");
     ConfigSetDefaultString(l_CoreEventsConfig, JoyCmdName[joyFullscreen], "", "Joystick event string for switching between fullscreen/windowed modes");
@@ -637,6 +641,10 @@ void event_sdl_keydown(int keysym, int keymod)
         main_advance_one();
     else if (keysym == sdl_keysym2native(ConfigGetParamInt(l_CoreEventsConfig, kbdGameshark)))
         event_set_gameshark(1);
+    else if (keysym == sdl_keysym2native(ConfigGetParamInt(l_CoreEventsConfig, kbdOverclock)))
+        main_set_cycles(100);
+    else if (keysym == sdl_keysym2native(ConfigGetParamInt(l_CoreEventsConfig, kbdUnderclock)))
+        main_set_cycles(-100);
     else
     {
         /* pass all other keypresses to the input plugin */

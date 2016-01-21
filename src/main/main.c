@@ -107,6 +107,7 @@ struct rsp_core g_sp;
 
 int g_delay_si = 0;
 
+int g_vi_refresh_rate = 1500;
 int g_gs_vi_counter = 0;
 
 /** static (local) variables **/
@@ -388,6 +389,15 @@ void main_advance_one(void)
     l_FrameAdvance = 1;
     rompause = 0;
     StateChanged(M64CORE_EMU_STATE, M64EMU_RUNNING);
+}
+
+void main_set_cylcles(int cycles)
+{
+    if (g_vi_refresh_rate > 100 && g_vi_refresh_rate + cycles < 5000)
+    {
+	g_vi_refresh_rate += cycles;
+        main_message(M64MSG_STATUS, OSD_BOTTOM_LEFT, "%s %d%%", "Cycles:", g_vi_refresh_rate);
+    }
 }
 
 static void main_draw_volume_osd(void)

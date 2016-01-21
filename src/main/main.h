@@ -61,6 +61,7 @@ extern m64p_frame_callback g_FrameCallback;
 
 extern int g_delay_si;
 
+extern int g_vi_refresh_rate;
 extern int g_gs_vi_counter;
 
 const char* get_savestatepath(void);
@@ -82,6 +83,8 @@ void main_advance_one(void);
 void main_speedup(int percent);
 void main_speeddown(int percent);
 void main_set_fastforward(int enable);
+
+void main_set_cycles(int cylces);
 
 void main_take_next_screenshot(void);
 
