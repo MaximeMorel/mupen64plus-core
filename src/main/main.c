@@ -391,7 +391,7 @@ void main_advance_one(void)
     StateChanged(M64CORE_EMU_STATE, M64EMU_RUNNING);
 }
 
-void main_set_cylcles(int cycles)
+void main_set_cycles(int cycles)
 {
     if (g_vi_refresh_rate > 100 && g_vi_refresh_rate + cycles < 5000)
     {

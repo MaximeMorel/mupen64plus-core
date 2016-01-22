@@ -84,7 +84,7 @@ void main_speedup(int percent);
 void main_speeddown(int percent);
 void main_set_fastforward(int enable);
 
-void main_set_cycles(int cylces);
+void main_set_cycles(int cycles);
 
 void main_take_next_screenshot(void);
 
