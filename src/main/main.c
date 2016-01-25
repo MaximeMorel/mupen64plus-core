@@ -396,7 +396,7 @@ void main_set_cycles(int cycles)
     if (g_vi_refresh_rate > 100 && g_vi_refresh_rate + cycles < 5000)
     {
 	g_vi_refresh_rate += cycles;
-        main_message(M64MSG_STATUS, OSD_BOTTOM_LEFT, "%s %d%%", "Cycles:", g_vi_refresh_rate);
+        main_message(M64MSG_STATUS, OSD_BOTTOM_LEFT, "%s %d", "Cycles:", g_vi_refresh_rate);
     }
 }
 
