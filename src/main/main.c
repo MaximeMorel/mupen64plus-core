@@ -744,15 +744,31 @@ void new_frame(void)
 
 static void apply_speed_limiter(void)
 {
-    unsigned int CurrentFPSTime;
-    static unsigned int LastFPSTime = 0;
-    static float VITotalDelta;
-    static float VIDeltas[64];
-    static unsigned int VIDeltasIndex;
+    static unsigned long totalVIs = 0;
+    static int resetOnce = 0;
+    static int lastSpeedFactor = 100;
+    static unsigned int StartFPSTime = 0;
+    static const double defaultSpeedFactor = 100.0;
+    unsigned int CurrentFPSTime = SDL_GetTicks();
 
-    double VILimitMilliseconds = 1000.0 / ROM_PARAMS.vilimit;
-    double AdjustedLimit = VILimitMilliseconds * 100.0 / l_SpeedFactor;  // adjust for selected emulator speed
-    float ThisFrameDelta, IntegratedDelta, TimeToWait;
+    // calculate frame duration based upon ROM setting (50/60hz) and mupen64plus speed adjustment
+    const double VILimitMilliseconds = 1000.0 / (double)ROM_PARAMS.vilimit;
+    const double SpeedFactorMultiple = defaultSpeedFactor/l_SpeedFactor;
+    const double AdjustedLimit = VILimitMilliseconds * SpeedFactorMultiple;
+
+    //if this is the first time or we are resuming from pause
+    if(StartFPSTime == 0 || !resetOnce || lastSpeedFactor != l_SpeedFactor)
+    {
+       StartFPSTime = CurrentFPSTime;
+       totalVIs = 0;
+       resetOnce = 1;
+    }
+    else
+    {
+        ++totalVIs;
+    }
+
+    lastSpeedFactor = l_SpeedFactor;
 
     timed_section_start(TIMED_SECTION_IDLE);
 
@@ -760,47 +776,23 @@ static void apply_speed_limiter(void)
     if(g_DebuggerActive) DebuggerCallback(DEBUG_UI_VI, 0);
 #endif
 
-    // if this is the first frame, initialize our data structures
-    if(LastFPSTime == 0)
+    double totalElapsedGameTime = AdjustedLimit*totalVIs;
+    double elapsedRealTime = CurrentFPSTime - StartFPSTime;
+    double sleepTime = totalElapsedGameTime - elapsedRealTime;
+
+    //Reset if the sleep needed is an unreasonable value
+    static const double minSleepNeeded = -50;
+    static const double maxSleepNeeded = 50;
+    if(sleepTime < minSleepNeeded || sleepTime > (maxSleepNeeded*SpeedFactorMultiple))
     {
-        LastFPSTime = SDL_GetTicks();
-        VITotalDelta = 0;
-        memset(VIDeltas, 0, sizeof(VIDeltas));
-        VIDeltasIndex = 0;
-        return;
+       resetOnce = 0;
     }
-
-    // calculate # of milliseconds that have passed since the last video interrupt
-    CurrentFPSTime = SDL_GetTicks();
-    ThisFrameDelta = CurrentFPSTime - LastFPSTime - AdjustedLimit;
-
-    // are we too fast?
-    if (ThisFrameDelta < 0)
+    else if(sleepTime > 0.0 && l_MainSpeedLimit)
     {
-        // calculate the total time error over the last 64 frames
-        IntegratedDelta = VITotalDelta  + ThisFrameDelta;
-        // if we are still too fast, and then speed limiter is on, then we should wait
-        if (IntegratedDelta < 0 && l_MainSpeedLimit)
-        {
-            TimeToWait = (IntegratedDelta > ThisFrameDelta) ? -IntegratedDelta : -ThisFrameDelta;
-            DebugMessage(M64MSG_VERBOSE, "    apply_speed_limiter(): Waiting %ims", (int) TimeToWait);
-            SDL_Delay((int) TimeToWait);
-            // recalculate # of milliseconds that have passed since the last video interrupt,
-            // taking into account the time we just waited
-            CurrentFPSTime = SDL_GetTicks();
-            ThisFrameDelta = CurrentFPSTime - LastFPSTime - AdjustedLimit;
-        }
+       DebugMessage(M64MSG_VERBOSE, "    apply_speed_limiter(): Waiting %ims", (int) sleepTime);
+
+       SDL_Delay((int) sleepTime);
     }
-
-    // Discard frames with excessive execution time
-    if (ThisFrameDelta > AdjustedLimit * 3)
-    	ThisFrameDelta = 0.f;
-
-    // update our data structures
-    LastFPSTime = CurrentFPSTime ;
-    VITotalDelta += ThisFrameDelta - VIDeltas[VIDeltasIndex];
-    VIDeltas[VIDeltasIndex] = ThisFrameDelta;
-    VIDeltasIndex = (VIDeltasIndex + 1) & 63;
 
     timed_section_end(TIMED_SECTION_IDLE);
 }
